@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - v4</title>
+<title>Gioco Carte NFC - Dal Vivo</title>
 <style>
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
@@ -10,17 +10,17 @@ body {
   background: #e8f0f8;
   padding: 2em;
 }
-#info {
+#info, #inventory, #log {
   background: white;
-  padding: 1.5em;
+  padding: 1em 1.5em;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  max-width: 400px;
-  margin: 1.5em auto;
+  max-width: 420px;
+  margin: 1.2em auto;
 }
 button {
-  padding: 12px 20px;
-  font-size: 16px;
+  padding: 10px 16px;
+  font-size: 15px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
@@ -28,29 +28,9 @@ button {
   color: white;
 }
 button:hover { background: #45a049; }
-
-#plusButtons {
-  margin-top: 15px;
-  display: none;
-}
-#plusButtons button {
-  margin: 5px;
-  background: #2196F3;
-}
-
-#inventory, #log {
-  background: white;
-  margin: 1.5em auto;
-  padding: 1em;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  max-width: 400px;
-  text-align: left;
-}
-#inventory ul {
-  list-style: none;
-  padding: 0;
-}
+#plusButtons { display: none; }
+#plusButtons button { margin: 5px; background: #2196F3; }
+#inventory ul { list-style: none; padding: 0; }
 #inventory li {
   background: #f0f8ff;
   margin: 0.3em 0;
@@ -67,16 +47,14 @@ button:hover { background: #45a049; }
   font-size: 14px;
 }
 #inventory button:hover { background: #e68900; }
-
-#log {
-  font-size: 14px;
-  color: #333;
-}
+#log { font-size: 14px; color: #333; text-align:left; }
+#damageButtons { margin-top: 15px; }
+#damageButtons button { margin: 5px; background:#f44336; }
 </style>
 </head>
 <body>
 
-<h1>🎮 Gioco Carte NFC</h1>
+<h1>🎮 Gioco Carte NFC - Dal Vivo</h1>
 <p>Avvicina una carta per iniziare o potenziarti!</p>
 <button id="scanBtn">Scansiona Carta</button>
 
@@ -86,11 +64,18 @@ button:hover { background: #45a049; }
   <p>💪 Forza: <span id="str"></span></p>
   <p>⚡ Agilità: <span id="agi"></span></p>
   <p>✨ Magia: <span id="mag"></span></p>
+
   <div id="plusButtons">
     <p><b>+1 punto a una statistica:</b></p>
     <button onclick="addStat('str')">Forza +1</button>
     <button onclick="addStat('agi')">Agilità +1</button>
     <button onclick="addStat('mag')">Magia +1</button>
+  </div>
+
+  <div id="damageButtons">
+    <p><b>Segna danno subito:</b></p>
+    <button onclick="takeDamage(1)">Danno Fisico -1</button>
+    <button onclick="takeDamage(2)">Danno Magico -1</button>
   </div>
 </div>
 
@@ -105,21 +90,20 @@ button:hover { background: #45a049; }
 </div>
 
 <script>
+/* ==== DATI BASE ==== */
 const characters = [
-  {name:"Guerriero", hp:10, str:8, agi:5, mag:2},
-  {name:"Mago", hp:8, str:3, agi:4, mag:9},
-  {name:"Arciere", hp:9, str:5, agi:8, mag:3},
-  {name:"Assassino", hp:7, str:6, agi:9, mag:2},
+  {name:"Guerriero", hp:10, str:8, agi:5, mag:2, activeEffects:[]},
+  {name:"Mago", hp:8, str:3, agi:4, mag:9, activeEffects:[]},
+  {name:"Arciere", hp:9, str:5, agi:8, mag:3, activeEffects:[]},
+  {name:"Assassino", hp:7, str:6, agi:9, mag:2, activeEffects:[]}
 ];
 
-// UID reali in minuscolo
 const cardsUID = {
-  "04:1b:82:b9:8f:61:80": "personaggioIniziale", // personaggio
-  "04:09:cf:b9:8f:61:80": "bonusStat",           // aumento stats
-  "04:27:af:67:6f:61:80": "itemCasuale"          // item casuale
+  "04:1b:82:b9:8f:61:80": "personaggioIniziale",
+  "04:09:cf:b9:8f:61:80": "bonusStat",
+  "04:27:af:67:6f:61:80": "itemCasuale"
 };
 
-// Oggetti del gioco
 const items = [
   { name: "Scudo di legno", desc: "Para un colpo fisico e poi si rompe.", effect: "blockNext" },
   { name: "Pozione di forza", desc: "+2 Forza permanente.", effect: "str+2" },
@@ -127,7 +111,6 @@ const items = [
   { name: "Bacchetta antica", desc: "+2 Magia permanente.", effect: "mag+2" },
   { name: "Amuleto vitale", desc: "+3 Punti Vita permanenti.", effect: "hp+3" },
   { name: "Stivali del vento", desc: "+2 Agilità.", effect: "agi+2" },
-  { name: "Pergamena del caos", desc: "Aumenta una statistica casuale di +1.", effect: "random+1" },
   { name: "Pietra runica", desc: "Il prossimo attacco infligge doppio danno.", effect: "doubleAttack" },
   { name: "Anello del druido", desc: "Rigenera 1 HP a ogni turno per 3 turni.", effect: "regen3" },
   { name: "Cristallo maledetto", desc: "+4 Magia ma -2 HP.", effect: "mag+4-hp-2" }
@@ -135,31 +118,31 @@ const items = [
 
 let currentCharacter = null;
 let inventory = [];
-let activeEffects = [];
 
+/* ==== SCANSIONE NFC ==== */
 document.getElementById("scanBtn").addEventListener("click", async ()=>{
   if("NDEFReader" in window){
     try{
       const ndef = new NDEFReader();
       await ndef.scan();
-      console.log("Scansione avviata — avvicina la carta!");
+      console.log("Scansione avviata...");
       ndef.onreading = event=>{
-        const uid = event.serialNumber;
-        console.log("Carta letta:", uid);
+        const uid = event.serialNumber.toLowerCase();
+        console.log("UID:", uid);
         handleCard(uid);
       };
-    }catch(error){
-      console.error("Errore NFC:", error);
-    }
+    }catch(error){console.error("Errore NFC:", error);}
   } else console.error("NFC non supportato.");
 });
 
+/* ==== GESTIONE CARTE ==== */
 function handleCard(uid){
   const type = cardsUID[uid];
   if(!type){ logEvent("Carta sconosciuta."); return; }
 
   if(type === "personaggioIniziale"){
-    currentCharacter = {...characters[Math.floor(Math.random() * characters.length)]};
+    currentCharacter = {...characters[Math.floor(Math.random()*characters.length)]};
+    currentCharacter.activeEffects = [];
     logEvent(`Hai pescato <b>${currentCharacter.name}</b>!`);
     showCharacter();
   }
@@ -177,6 +160,7 @@ function handleCard(uid){
   }
 }
 
+/* ==== STATS ==== */
 function addStat(stat){
   if(currentCharacter){
     currentCharacter[stat] += 1;
@@ -186,43 +170,7 @@ function addStat(stat){
   }
 }
 
-function useItem(index){
-  const item = inventory[index];
-  if(!item) return;
-
-  applyItemEffect(item);
-  logEvent(`Hai usato <b>${item.name}</b> (${item.desc})`);
-  inventory.splice(index,1);
-  updateInventory();
-}
-
-function applyItemEffect(item){
-  const effect = item.effect;
-  if(effect.includes("+")){
-    const parts = effect.split("-");
-    parts.forEach(e=>{
-      if(e.includes("+")){
-        const [stat, val] = e.split("+");
-        const value = parseInt(val);
-        if(currentCharacter[stat] !== undefined){
-          currentCharacter[stat] += value;
-        }
-      }
-      if(e.includes("hp-")){
-        const value = parseInt(e.split("-")[1]);
-        currentCharacter.hp -= value;
-      }
-    });
-  } else if(effect === "blockNext" || effect === "dodgeNext" || effect === "doubleAttack" || effect === "regen3"){
-    activeEffects.push(effect);
-  } else if(effect === "random+1"){
-    const stats = ["str","agi","mag"];
-    const s = stats[Math.floor(Math.random()*stats.length)];
-    currentCharacter[s] += 1;
-  }
-  showCharacter();
-}
-
+/* ==== INVENTARIO ==== */
 function updateInventory(){
   const list = document.getElementById("itemList");
   list.innerHTML = "";
@@ -233,13 +181,69 @@ function updateInventory(){
   });
 }
 
-function logEvent(text){
-  const logDiv = document.getElementById("logText");
-  logDiv.innerHTML = `<div>${text}</div>` + logDiv.innerHTML;
+function useItem(index){
+  const item = inventory[index];
+  if(!item) return;
+  applyItemEffect(item);
+  logEvent(`Hai usato <b>${item.name}</b> (${item.desc})`);
+  inventory.splice(index,1);
+  updateInventory();
+}
+
+/* ==== EFFETTI ITEM ==== */
+function applyItemEffect(item){
+  const effect = item.effect;
+  const c = currentCharacter;
+  if(effect.includes("+")){
+    const parts = effect.split("-");
+    parts.forEach(e=>{
+      if(e.includes("+")){
+        const [stat, val] = e.split("+");
+        const value = parseInt(val);
+        if(c[stat] !== undefined) c[stat] += value;
+      }
+      if(e.includes("hp-")){
+        const value = parseInt(e.split("-")[1]);
+        c.hp -= value;
+      }
+    });
+  } else if(["blockNext","dodgeNext","doubleAttack","regen3"].includes(effect)){
+    c.activeEffects.push(effect);
+  }
+  showCharacter();
+}
+
+/* ==== DANNI DAL VIVO ==== */
+function takeDamage(type){
+  if(!currentCharacter) return;
+  let dmg = 1; // valore base
+  if(type===1){ // fisico
+    if(currentCharacter.activeEffects.includes("blockNext")){
+      removeEffect(currentCharacter,"blockNext");
+      logEvent("Colpo fisico bloccato dallo scudo!");
+      return;
+    }
+  }
+  if(type===2){ // magico
+    if(currentCharacter.activeEffects.includes("dodgeNext")){
+      removeEffect(currentCharacter,"dodgeNext");
+      logEvent("Colpo magico schivato!");
+      return;
+    }
+  }
+  currentCharacter.hp -= dmg;
+  logEvent(`Hai subito ${dmg} danno (${type===1?"Fisico":"Magico"}). HP rimanenti: ${currentCharacter.hp}`);
+  showCharacter();
+}
+
+/* ==== UTILI ==== */
+function removeEffect(player,eff){
+  player.activeEffects = player.activeEffects.filter(e=>e!==eff);
 }
 
 function showCharacter(){
   const c = currentCharacter;
+  if(!c) return;
   document.getElementById("info").style.display = "block";
   document.getElementById("charName").textContent = c.name;
   document.getElementById("hp").textContent = c.hp;
@@ -247,7 +251,11 @@ function showCharacter(){
   document.getElementById("agi").textContent = c.agi;
   document.getElementById("mag").textContent = c.mag;
 }
-</script>
 
+function logEvent(text){
+  const div = document.getElementById("logText");
+  div.innerHTML = `<div>${text}</div>` + div.innerHTML;
+}
+</script>
 </body>
 </html>
