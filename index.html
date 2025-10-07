@@ -2,59 +2,88 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - Multiplayer Dal Vivo</title>
+<title>Gioco Carte NFC - Multiplayer Medievale</title>
 <style>
+/* ==== FONT E SFONDO ==== */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'MedievalSharp', cursive;
   text-align: center;
-  background:#f5f5f5;
-  padding:2em;
+  background: url('https://images.unsplash.com/photo-1544025162-2a2a6de1a0c7?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+  background-size: cover;
+  color: #3b1f0b;
+  margin:0;
+  padding:2em 1em;
 }
-#info, #inventory, #log {
-  background:white;
-  padding:1em 1.5em;
-  border-radius:12px;
-  margin:1em auto;
-  max-width:400px;
+
+/* ==== CONTAINER PRINCIPALE ==== */
+#mainContainer {
+  background: rgba(245, 222, 179, 0.95);
+  border: 4px solid #8b4513;
+  border-radius: 15px;
+  padding: 2em;
+  max-width: 450px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
+
+/* ==== BOTTONI ==== */
 button {
-  padding:10px 16px;
-  font-size:15px;
-  border:none;
-  border-radius:8px;
-  background:#4CAF50;
-  color:white;
-  cursor:pointer;
-  margin:5px;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 12px;
+  border: 2px solid #8b4513;
+  background: #deb887;
+  color: #3b1f0b;
+  cursor: pointer;
+  margin: 5px;
+  font-family: 'MedievalSharp', cursive;
+  transition: 0.2s;
 }
-button:hover{background:#45a049;}
-#plusButtons{display:none;}
-#plusButtons button{background:#2196F3;color:white;}
-#inventory ul{list-style:none;padding:0;}
-#inventory li{
-  background:#f0f8ff;
-  margin:0.3em 0;
-  padding:0.5em;
-  border-radius:8px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+button:hover { background: #d2a679; transform: scale(1.05); }
+
+/* ==== SEZIONI ==== */
+#info, #inventory, #log {
+  background: rgba(255, 250, 240, 0.95);
+  padding: 1em 1.5em;
+  border-radius: 12px;
+  margin: 1em auto;
+  text-align: left;
 }
-#inventory button{
-  background:#ff9800;
-  padding:5px 10px;
-  font-size:14px;
-  border-radius:6px;
-  color:white;
+
+#inventory ul { list-style: none; padding: 0; }
+#inventory li {
+  background: #fff8dc;
+  margin: 0.3em 0;
+  padding: 0.5em;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-#inventory button:hover{background:#e68900;}
-#damageButtons button{background:#f44336;color:white;}
-#damageButtons button:hover{background:#a52a2a;}
-#log{font-size:14px;color:#333;text-align:left;max-height:200px;overflow-y:auto;}
+#inventory button { font-size: 14px; padding: 5px 10px; background: #c68642; color:white; border:none; border-radius:6px; }
+#inventory button:hover { background:#a65a2a; }
+
+#plusButtons { display: none; }
+#plusButtons button { background:#6b8e23; color:white; }
+#plusButtons button:hover { background:#556b2f; }
+
+#damageButtons { margin-top: 15px; }
+#damageButtons button { background:#8b0000; color:white; }
+#damageButtons button:hover { background:#a52a2a; }
+
+#log { font-size: 14px; color: #3b1f0b; max-height: 200px; overflow-y: auto; }
+
+/* ==== RESPONSIVE ==== */
+@media (max-width: 480px){
+  #mainContainer { padding:1em; }
+  button { font-size:14px; padding:10px 16px; }
+}
 </style>
 </head>
 <body>
 
+<div id="mainContainer">
 <h1>🎮 Gioco Carte NFC - Multiplayer</h1>
 <p>Avvicina una carta NFC per iniziare o potenziarti!</p>
 <button id="scanBtn">Scansiona Carta</button>
@@ -64,7 +93,6 @@ button:hover{background:#45a049;}
   <p>❤️ Punti Vita: <span id="hp"></span></p>
   <p>💪 Forza: <span id="str"></span></p>
   <p>✨ Magia: <span id="mag"></span></p>
-  <p>⚡ Agilità (schivata): <span id="agi"></span></p>
 
   <div id="plusButtons">
     <p><b>+1 punto a una statistica:</b></p>
@@ -74,9 +102,9 @@ button:hover{background:#45a049;}
   </div>
 
   <div id="damageButtons">
-    <p><b>Segna danno subito:</b></p>
-    <button onclick="takeDamage('physical')">Attacco Fisico</button>
-    <button onclick="takeDamage('magic')">Attacco Magico</button>
+    <p><b>Segna danno subito (dal vivo):</b></p>
+    <button onclick="takeDamage(1)">-1 HP</button>
+    <button onclick="takeDamage(2)">-2 HP</button>
   </div>
 </div>
 
@@ -89,13 +117,14 @@ button:hover{background:#45a049;}
   <h3>📜 Eventi</h3>
   <div id="logText">Nessun evento ancora.</div>
 </div>
+</div>
 
 <script>
 const characters = [
-  {name:"Guerriero", hp:10, str:7, mag:2, agi:3, activeEffects:[]},
-  {name:"Mago", hp:8, str:3, mag:7, agi:3, activeEffects:[]},
-  {name:"Arciere", hp:9, str:5, mag:4, agi:5, activeEffects:[]},
-  {name:"Assassino", hp:7, str:6, mag:3, agi:6, activeEffects:[]}
+  {name:"Guerriero", hp:100, str:10, mag:5, activeEffects:[]},
+  {name:"Mago", hp:100, str:5, mag:10, activeEffects:[]},
+  {name:"Arciere", hp:100, str:8, mag:7, activeEffects:[]},
+  {name:"Assassino", hp:100, str:9, mag:6, activeEffects:[]}
 ];
 
 const cardsUID = {
@@ -105,12 +134,11 @@ const cardsUID = {
 };
 
 const items = [
-  {name:"Scudo di legno", desc:"Para un colpo fisico e poi si rompe.", effect:"blockNext"},
+  {name:"Scudo di legno", desc:"Para un colpo e poi si rompe.", effect:"blockNext"},
   {name:"Pozione di forza", desc:"+2 Forza permanente.", effect:"str+2"},
-  {name:"Pozione di guarigione", desc:"+2 HP istantanei.", effect:"hp+2"},
-  {name:"Mantello d’ombra", desc:"Schivi il prossimo attacco.", effect:"dodgeNext"},
+  {name:"Pozione di guarigione", desc:"+5 HP istantanei.", effect:"hp+5"},
   {name:"Bacchetta antica", desc:"+2 Magia permanente.", effect:"mag+2"},
-  {name:"Amuleto vitale", desc:"+3 Punti Vita permanenti.", effect:"hp+3"}
+  {name:"Amuleto vitale", desc:"+10 HP permanenti.", effect:"hp+10"}
 ];
 
 let currentCharacter = null;
@@ -123,11 +151,11 @@ document.getElementById("scanBtn").addEventListener("click",async()=>{
       await ndef.scan();
       console.log("Scansione avviata...");
       ndef.onreading=event=>{
-        const uid = event.serialNumber.toLowerCase();
+        const uid=event.serialNumber.toLowerCase();
         console.log("UID:",uid);
         handleCard(uid);
       };
-    }catch(error){console.error("Errore NFC:",error);}
+    }catch(e){console.error("Errore NFC:",e);}
   }else console.error("NFC non supportato.");
 });
 
@@ -204,26 +232,16 @@ function applyItemEffect(item){
   showCharacter();
 }
 
-function takeDamage(type){
+function takeDamage(val){
   if(!currentCharacter) return;
-  let dmg=(type==="physical"?currentCharacter.str:currentCharacter.mag);
-  if(type==="physical" && currentCharacter.activeEffects.includes("blockNext")){
-    removeEffect(currentCharacter,"blockNext");
-    logEvent("Colpo fisico bloccato dallo scudo!");
-    return;
+  currentCharacter.hp-=val;
+  if(currentCharacter.hp<=0){
+    currentCharacter.hp=0;
+    logEvent("💀 Hai perso!");
+  } else {
+    logEvent(`Subiti ${val} danni. HP rimanenti: ${currentCharacter.hp}`);
   }
-  if(type==="magic" && currentCharacter.activeEffects.includes("dodgeNext")){
-    removeEffect(currentCharacter,"dodgeNext");
-    logEvent("Colpo magico schivato!");
-    return;
-  }
-  currentCharacter.hp-=dmg;
-  logEvent(`Subiti ${dmg} danni (${type}). HP rimanenti: ${currentCharacter.hp}`);
   showCharacter();
-}
-
-function removeEffect(player,eff){
-  player.activeEffects=player.activeEffects.filter(e=>e!==eff);
 }
 
 function showCharacter(){
@@ -233,7 +251,6 @@ function showCharacter(){
   document.getElementById("charName").textContent=c.name;
   document.getElementById("hp").textContent=c.hp;
   document.getElementById("str").textContent=c.str;
-  document.getElementById("agi").textContent=c.agi;
   document.getElementById("mag").textContent=c.mag;
 }
 
