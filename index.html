@@ -2,12 +2,12 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - v3</title>
+<title>Gioco Carte NFC - v4</title>
 <style>
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Arial, sans-serif;
   text-align: center;
-  background: #f0f4f8;
+  background: #e8f0f8;
   padding: 2em;
 }
 #info {
@@ -37,6 +37,41 @@ button:hover { background: #45a049; }
   margin: 5px;
   background: #2196F3;
 }
+
+#inventory, #log {
+  background: white;
+  margin: 1.5em auto;
+  padding: 1em;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  max-width: 400px;
+  text-align: left;
+}
+#inventory ul {
+  list-style: none;
+  padding: 0;
+}
+#inventory li {
+  background: #f0f8ff;
+  margin: 0.3em 0;
+  padding: 0.5em;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#inventory button {
+  background: #ff9800;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+#inventory button:hover { background: #e68900; }
+
+#log {
+  font-size: 14px;
+  color: #333;
+}
 </style>
 </head>
 <body>
@@ -59,6 +94,16 @@ button:hover { background: #45a049; }
   </div>
 </div>
 
+<div id="inventory">
+  <h3>🎒 Inventario</h3>
+  <ul id="itemList"></ul>
+</div>
+
+<div id="log">
+  <h3>📜 Eventi</h3>
+  <div id="logText">Nessun evento ancora.</div>
+</div>
+
 <script>
 const characters = [
   {name:"Guerriero", hp:10, str:8, agi:5, mag:2},
@@ -67,66 +112,130 @@ const characters = [
   {name:"Assassino", hp:7, str:6, agi:9, mag:2},
 ];
 
-// ✅ UID reali in minuscolo
+// UID reali in minuscolo
 const cardsUID = {
   "04:1b:82:b9:8f:61:80": "personaggioIniziale", // personaggio
   "04:09:cf:b9:8f:61:80": "bonusStat",           // aumento stats
   "04:27:af:67:6f:61:80": "itemCasuale"          // item casuale
 };
 
+// Oggetti del gioco
+const items = [
+  { name: "Scudo di legno", desc: "Para un colpo fisico e poi si rompe.", effect: "blockNext" },
+  { name: "Pozione di forza", desc: "+2 Forza permanente.", effect: "str+2" },
+  { name: "Mantello d’ombra", desc: "Schivi il prossimo attacco.", effect: "dodgeNext" },
+  { name: "Bacchetta antica", desc: "+2 Magia permanente.", effect: "mag+2" },
+  { name: "Amuleto vitale", desc: "+3 Punti Vita permanenti.", effect: "hp+3" },
+  { name: "Stivali del vento", desc: "+2 Agilità.", effect: "agi+2" },
+  { name: "Pergamena del caos", desc: "Aumenta una statistica casuale di +1.", effect: "random+1" },
+  { name: "Pietra runica", desc: "Il prossimo attacco infligge doppio danno.", effect: "doubleAttack" },
+  { name: "Anello del druido", desc: "Rigenera 1 HP a ogni turno per 3 turni.", effect: "regen3" },
+  { name: "Cristallo maledetto", desc: "+4 Magia ma -2 HP.", effect: "mag+4-hp-2" }
+];
+
 let currentCharacter = null;
+let inventory = [];
+let activeEffects = [];
 
 document.getElementById("scanBtn").addEventListener("click", async ()=>{
   if("NDEFReader" in window){
     try{
       const ndef = new NDEFReader();
       await ndef.scan();
-      alert("Scansione avviata — avvicina la carta!");
+      console.log("Scansione avviata — avvicina la carta!");
       ndef.onreading = event=>{
         const uid = event.serialNumber;
         console.log("Carta letta:", uid);
-        alert("UID letto: " + uid); // utile per debug
         handleCard(uid);
       };
     }catch(error){
-      alert("Errore nella scansione NFC: " + error);
+      console.error("Errore NFC:", error);
     }
-  } else alert("NFC non supportato su questo dispositivo/browser.");
+  } else console.error("NFC non supportato.");
 });
 
 function handleCard(uid){
   const type = cardsUID[uid];
-  if(!type){
-    alert("Carta sconosciuta!");
-    return;
-  }
+  if(!type){ logEvent("Carta sconosciuta."); return; }
 
   if(type === "personaggioIniziale"){
     currentCharacter = {...characters[Math.floor(Math.random() * characters.length)]};
-    alert("Hai pescato: " + currentCharacter.name);
+    logEvent(`Hai pescato <b>${currentCharacter.name}</b>!`);
     showCharacter();
   }
   else if(type === "bonusStat"){
-    if(!currentCharacter){alert("Prima devi avere un personaggio!"); return;}
+    if(!currentCharacter){ logEvent("Prima devi avere un personaggio!"); return; }
     document.getElementById("plusButtons").style.display = "block";
+    logEvent("Carta bonus: scegli una statistica da aumentare.");
   }
   else if(type === "itemCasuale"){
-    if(!currentCharacter){alert("Prima devi avere un personaggio!"); return;}
-    const stats = ["str","agi","mag"];
-    const chosen = stats[Math.floor(Math.random()*stats.length)];
-    currentCharacter[chosen] += 2;
-    alert("Hai trovato un oggetto! +" + 2 + " a " + chosen);
-    showCharacter();
+    if(!currentCharacter){ logEvent("Prima devi avere un personaggio!"); return; }
+    const item = {...items[Math.floor(Math.random()*items.length)]};
+    inventory.push(item);
+    updateInventory();
+    logEvent(`Hai trovato un nuovo oggetto: <b>${item.name}</b>!`);
   }
 }
 
 function addStat(stat){
   if(currentCharacter){
     currentCharacter[stat] += 1;
-    alert("Aumentata " + stat + " di 1 punto!");
+    logEvent(`Aumentata <b>${stat}</b> di 1 punto.`);
     showCharacter();
     document.getElementById("plusButtons").style.display = "none";
   }
+}
+
+function useItem(index){
+  const item = inventory[index];
+  if(!item) return;
+
+  applyItemEffect(item);
+  logEvent(`Hai usato <b>${item.name}</b> (${item.desc})`);
+  inventory.splice(index,1);
+  updateInventory();
+}
+
+function applyItemEffect(item){
+  const effect = item.effect;
+  if(effect.includes("+")){
+    const parts = effect.split("-");
+    parts.forEach(e=>{
+      if(e.includes("+")){
+        const [stat, val] = e.split("+");
+        const value = parseInt(val);
+        if(currentCharacter[stat] !== undefined){
+          currentCharacter[stat] += value;
+        }
+      }
+      if(e.includes("hp-")){
+        const value = parseInt(e.split("-")[1]);
+        currentCharacter.hp -= value;
+      }
+    });
+  } else if(effect === "blockNext" || effect === "dodgeNext" || effect === "doubleAttack" || effect === "regen3"){
+    activeEffects.push(effect);
+  } else if(effect === "random+1"){
+    const stats = ["str","agi","mag"];
+    const s = stats[Math.floor(Math.random()*stats.length)];
+    currentCharacter[s] += 1;
+  }
+  showCharacter();
+}
+
+function updateInventory(){
+  const list = document.getElementById("itemList");
+  list.innerHTML = "";
+  inventory.forEach((item,i)=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<div><b>${item.name}</b><br><small>${item.desc}</small></div><button onclick="useItem(${i})">Usa</button>`;
+    list.appendChild(li);
+  });
+}
+
+function logEvent(text){
+  const logDiv = document.getElementById("logText");
+  logDiv.innerHTML = `<div>${text}</div>` + logDiv.innerHTML;
 }
 
 function showCharacter(){
