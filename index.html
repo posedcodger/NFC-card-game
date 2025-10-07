@@ -2,37 +2,56 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - Dal Vivo</title>
+<title>Gioco Carte NFC - Medievale</title>
 <style>
+/* ==== FONT E SFONDO ==== */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
 body {
-  font-family: 'Segoe UI', Arial, sans-serif;
+  font-family: 'MedievalSharp', cursive;
   text-align: center;
-  background: #e8f0f8;
+  background: url('https://images.unsplash.com/photo-1544025162-2a2a6de1a0c7?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+  background-size: cover;
+  color: #3b1f0b;
   padding: 2em;
 }
+
+/* ==== DIV PRINCIPALI ==== */
+#startScreen, #multiplayerDiv, #singleplayerDiv {
+  background: rgba(245, 222, 179, 0.95);
+  border: 4px solid #8b4513;
+  border-radius: 15px;
+  padding: 2em;
+  max-width: 500px;
+  margin: 2em auto;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* ==== BOTTONI ==== */
+button {
+  padding: 12px 20px;
+  font-size: 18px;
+  border-radius: 12px;
+  border: 2px solid #8b4513;
+  background: #deb887;
+  color: #3b1f0b;
+  cursor: pointer;
+  margin: 5px;
+  font-family: 'MedievalSharp', cursive;
+  transition: 0.2s;
+}
+button:hover { background: #d2a679; transform: scale(1.05); }
+
+/* ==== SEZIONI ==== */
 #info, #inventory, #log {
-  background: white;
+  background: rgba(255, 250, 240, 0.95);
   padding: 1em 1.5em;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  max-width: 420px;
-  margin: 1.2em auto;
+  margin: 1em auto;
+  text-align: left;
 }
-button {
-  padding: 10px 16px;
-  font-size: 15px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  background: #4CAF50;
-  color: white;
-}
-button:hover { background: #45a049; }
-#plusButtons { display: none; }
-#plusButtons button { margin: 5px; background: #2196F3; }
 #inventory ul { list-style: none; padding: 0; }
 #inventory li {
-  background: #f0f8ff;
+  background: #fff8dc;
   margin: 0.3em 0;
   padding: 0.5em;
   border-radius: 8px;
@@ -40,53 +59,105 @@ button:hover { background: #45a049; }
   justify-content: space-between;
   align-items: center;
 }
-#inventory button {
-  background: #ff9800;
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 14px;
-}
-#inventory button:hover { background: #e68900; }
-#log { font-size: 14px; color: #333; text-align:left; }
+#inventory button { font-size: 14px; padding: 5px 10px; background: #c68642; color:white; border:none; border-radius:6px; }
+#inventory button:hover { background:#a65a2a; }
+
+#plusButtons { display: none; }
+#plusButtons button { background:#6b8e23; color:white; }
+#plusButtons button:hover { background:#556b2f; }
+
 #damageButtons { margin-top: 15px; }
-#damageButtons button { margin: 5px; background:#f44336; }
+#damageButtons button { background:#8b0000; color:white; }
+#damageButtons button:hover { background:#a52a2a; }
+
+#log { font-size: 14px; color: #3b1f0b; max-height: 200px; overflow-y: auto; }
 </style>
 </head>
 <body>
 
-<h1>🎮 Gioco Carte NFC - Dal Vivo</h1>
-<p>Avvicina una carta per iniziare o potenziarti!</p>
-<button id="scanBtn">Scansiona Carta</button>
+<!-- ==== SCHERMATA INIZIALE ==== -->
+<div id="startScreen">
+  <h1>🏰 Gioco Carte NFC - Medievale</h1>
+  <p>Scegli la modalità di gioco:</p>
+  <button onclick="startMultiplayer()">Dal vivo Multiplayer</button>
+  <button onclick="startSingleplayer()">Singleplayer</button>
+</div>
 
-<div id="info" style="display:none;">
-  <h2 id="charName"></h2>
-  <p>❤️ Punti Vita: <span id="hp"></span></p>
-  <p>💪 Forza: <span id="str"></span></p>
-  <p>⚡ Agilità: <span id="agi"></span></p>
-  <p>✨ Magia: <span id="mag"></span></p>
+<!-- ==== MULTIPLAYER DAL VIVO ==== -->
+<div id="multiplayerDiv" style="display:none;">
+  <h2>🎮 Multiplayer Dal Vivo</h2>
+  <p>Avvicina una carta NFC per iniziare o potenziarti!</p>
+  <button id="scanBtn">Scansiona Carta</button>
 
-  <div id="plusButtons">
-    <p><b>+1 punto a una statistica:</b></p>
-    <button onclick="addStat('str')">Forza +1</button>
-    <button onclick="addStat('agi')">Agilità +1</button>
-    <button onclick="addStat('mag')">Magia +1</button>
+  <div id="info" style="display:none;">
+    <h2 id="charName"></h2>
+    <p>❤️ Punti Vita: <span id="hp"></span></p>
+    <p>💪 Forza: <span id="str"></span></p>
+    <p>⚡ Agilità: <span id="agi"></span></p>
+    <p>✨ Magia: <span id="mag"></span></p>
+
+    <div id="plusButtons">
+      <p><b>+1 punto a una statistica:</b></p>
+      <button onclick="addStat('str')">Forza +1</button>
+      <button onclick="addStat('agi')">Agilità +1</button>
+      <button onclick="addStat('mag')">Magia +1</button>
+    </div>
+
+    <div id="damageButtons">
+      <p><b>Segna danno subito:</b></p>
+      <button onclick="takeDamage(1)">Danno Fisico -1</button>
+      <button onclick="takeDamage(2)">Danno Magico -1</button>
+    </div>
   </div>
 
-  <div id="damageButtons">
-    <p><b>Segna danno subito:</b></p>
-    <button onclick="takeDamage(1)">Danno Fisico -1</button>
-    <button onclick="takeDamage(2)">Danno Magico -1</button>
+  <div id="inventory">
+    <h3>🎒 Inventario</h3>
+    <ul id="itemList"></ul>
+  </div>
+
+  <div id="log">
+    <h3>📜 Eventi</h3>
+    <div id="logText">Nessun evento ancora.</div>
   </div>
 </div>
 
-<div id="inventory">
-  <h3>🎒 Inventario</h3>
-  <ul id="itemList"></ul>
-</div>
+<!-- ==== SINGLEPLAYER ==== -->
+<div id="singleplayerDiv" style="display:none;">
+  <h2>🗡️ Singleplayer</h2>
+  <p>Avvicina una carta NFC per ottenere un personaggio.</p>
+  <button id="scanBtnSP">Scansiona Carta</button>
 
-<div id="log">
-  <h3>📜 Eventi</h3>
-  <div id="logText">Nessun evento ancora.</div>
+  <div id="infoSP" style="display:none;">
+    <h2 id="charNameSP"></h2>
+    <p>❤️ Punti Vita: <span id="hpSP"></span></p>
+    <p>💪 Forza: <span id="strSP"></span></p>
+    <p>⚡ Agilità: <span id="agiSP"></span></p>
+    <p>✨ Magia: <span id="magSP"></span></p>
+
+    <div id="plusButtonsSP">
+      <p><b>+1 punto a una statistica:</b></p>
+      <button onclick="addStatSP('str')">Forza +1</button>
+      <button onclick="addStatSP('agi')">Agilità +1</button>
+      <button onclick="addStatSP('mag')">Magia +1</button>
+    </div>
+
+    <div id="combatSP">
+      <p><b>Attacca il Bot:</b></p>
+      <button onclick="playerAttack('physical')">Attacco Fisico</button>
+      <button onclick="playerAttack('magic')">Attacco Magico</button>
+      <p>HP Bot: <span id="hpBot">0</span></p>
+    </div>
+  </div>
+
+  <div id="inventorySP">
+    <h3>🎒 Inventario</h3>
+    <ul id="itemListSP"></ul>
+  </div>
+
+  <div id="logSP">
+    <h3>📜 Eventi</h3>
+    <div id="logTextSP">Nessun evento ancora.</div>
+  </div>
 </div>
 
 <script>
@@ -116,10 +187,26 @@ const items = [
   { name: "Cristallo maledetto", desc: "+4 Magia ma -2 HP.", effect: "mag+4-hp-2" }
 ];
 
+/* ==== VARIABILI ==== */
 let currentCharacter = null;
 let inventory = [];
 
-/* ==== SCANSIONE NFC ==== */
+let currentCharacterSP = null;
+let inventorySP = [];
+let bot = {name:"Goblin", hp:10, str:5, agi:4, mag:3, activeEffects:[]};
+
+/* ==== FUNZIONI SCHERMATA INIZIALE ==== */
+function startMultiplayer(){
+  document.getElementById("startScreen").style.display="none";
+  document.getElementById("multiplayerDiv").style.display="block";
+}
+
+function startSingleplayer(){
+  document.getElementById("startScreen").style.display="none";
+  document.getElementById("singleplayerDiv").style.display="block";
+}
+
+/* ==== FUNZIONI MULTIPLAYER ==== */
 document.getElementById("scanBtn").addEventListener("click", async ()=>{
   if("NDEFReader" in window){
     try{
@@ -135,7 +222,6 @@ document.getElementById("scanBtn").addEventListener("click", async ()=>{
   } else console.error("NFC non supportato.");
 });
 
-/* ==== GESTIONE CARTE ==== */
 function handleCard(uid){
   const type = cardsUID[uid];
   if(!type){ logEvent("Carta sconosciuta."); return; }
@@ -160,7 +246,6 @@ function handleCard(uid){
   }
 }
 
-/* ==== STATS ==== */
 function addStat(stat){
   if(currentCharacter){
     currentCharacter[stat] += 1;
@@ -170,7 +255,6 @@ function addStat(stat){
   }
 }
 
-/* ==== INVENTARIO ==== */
 function updateInventory(){
   const list = document.getElementById("itemList");
   list.innerHTML = "";
@@ -190,7 +274,6 @@ function useItem(index){
   updateInventory();
 }
 
-/* ==== EFFETTI ITEM ==== */
 function applyItemEffect(item){
   const effect = item.effect;
   const c = currentCharacter;
@@ -213,30 +296,24 @@ function applyItemEffect(item){
   showCharacter();
 }
 
-/* ==== DANNI DAL VIVO ==== */
 function takeDamage(type){
   if(!currentCharacter) return;
-  let dmg = 1; // valore base
-  if(type===1){ // fisico
-    if(currentCharacter.activeEffects.includes("blockNext")){
-      removeEffect(currentCharacter,"blockNext");
-      logEvent("Colpo fisico bloccato dallo scudo!");
-      return;
-    }
+  let dmg = 1;
+  if(type===1 && currentCharacter.activeEffects.includes("blockNext")){
+    removeEffect(currentCharacter,"blockNext");
+    logEvent("Colpo fisico bloccato dallo scudo!");
+    return;
   }
-  if(type===2){ // magico
-    if(currentCharacter.activeEffects.includes("dodgeNext")){
-      removeEffect(currentCharacter,"dodgeNext");
-      logEvent("Colpo magico schivato!");
-      return;
-    }
+  if(type===2 && currentCharacter.activeEffects.includes("dodgeNext")){
+    removeEffect(currentCharacter,"dodgeNext");
+    logEvent("Colpo magico schivato!");
+    return;
   }
   currentCharacter.hp -= dmg;
   logEvent(`Hai subito ${dmg} danno (${type===1?"Fisico":"Magico"}). HP rimanenti: ${currentCharacter.hp}`);
   showCharacter();
 }
 
-/* ==== UTILI ==== */
 function removeEffect(player,eff){
   player.activeEffects = player.activeEffects.filter(e=>e!==eff);
 }
@@ -254,6 +331,139 @@ function showCharacter(){
 
 function logEvent(text){
   const div = document.getElementById("logText");
+  div.innerHTML = `<div>${text}</div>` + div.innerHTML;
+}
+
+/* ==== SINGLEPLAYER ==== */
+document.getElementById("scanBtnSP").addEventListener("click", async ()=>{
+  if("NDEFReader" in window){
+    try{
+      const ndef = new NDEFReader();
+      await ndef.scan();
+      console.log("Scansione avviata SP...");
+      ndef.onreading = event=>{
+        const uid = event.serialNumber.toLowerCase();
+        console.log("UID:", uid);
+        handleCardSP(uid);
+      };
+    }catch(error){console.error("Errore NFC SP:", error);}
+  } else console.error("NFC non supportato SP.");
+});
+
+function handleCardSP(uid){
+  const type = cardsUID[uid];
+  if(!type){ logEventSP("Carta sconosciuta."); return; }
+
+  if(type === "personaggioIniziale"){
+    currentCharacterSP = {...characters[Math.floor(Math.random()*characters.length)]};
+    currentCharacterSP.activeEffects = [];
+    logEventSP(`Hai pescato <b>${currentCharacterSP.name}</b>!`);
+    showCharacterSP();
+    bot.hp = 10;
+    document.getElementById("infoSP").style.display="block";
+    document.getElementById("hpBot").textContent = bot.hp;
+  }
+  else if(type === "bonusStat"){
+    if(!currentCharacterSP){ logEventSP("Prima devi avere un personaggio!"); return; }
+    document.getElementById("plusButtonsSP").style.display = "block";
+    logEventSP("Carta bonus: scegli una statistica da aumentare.");
+  }
+  else if(type === "itemCasuale"){
+    if(!currentCharacterSP){ logEventSP("Prima devi avere un personaggio!"); return; }
+    const item = {...items[Math.floor(Math.random()*items.length)]};
+    inventorySP.push(item);
+    updateInventorySP();
+    logEventSP(`Hai trovato un nuovo oggetto: <b>${item.name}</b>!`);
+  }
+}
+
+function addStatSP(stat){
+  if(currentCharacterSP){
+    currentCharacterSP[stat] += 1;
+    logEventSP(`Aumentata <b>${stat}</b> di 1 punto.`);
+    showCharacterSP();
+    document.getElementById("plusButtonsSP").style.display = "none";
+  }
+}
+
+function updateInventorySP(){
+  const list = document.getElementById("itemListSP");
+  list.innerHTML = "";
+  inventorySP.forEach((item,i)=>{
+    const li = document.createElement("li");
+    li.innerHTML = `<div><b>${item.name}</b><br><small>${item.desc}</small></div><button onclick="useItemSP(${i})">Usa</button>`;
+    list.appendChild(li);
+  });
+}
+
+function useItemSP(index){
+  const item = inventorySP[index];
+  if(!item) return;
+  applyItemEffectSP(item);
+  logEventSP(`Hai usato <b>${item.name}</b> (${item.desc})`);
+  inventorySP.splice(index,1);
+  updateInventorySP();
+}
+
+function applyItemEffectSP(item){
+  const effect = item.effect;
+  const c = currentCharacterSP;
+  if(effect.includes("+")){
+    const parts = effect.split("-");
+    parts.forEach(e=>{
+      if(e.includes("+")){
+        const [stat, val] = e.split("+");
+        const value = parseInt(val);
+        if(c[stat] !== undefined) c[stat] += value;
+      }
+      if(e.includes("hp-")){
+        const value = parseInt(e.split("-")[1]);
+        c.hp -= value;
+      }
+    });
+  } else if(["blockNext","dodgeNext","doubleAttack","regen3"].includes(effect)){
+    c.activeEffects.push(effect);
+  }
+  showCharacterSP();
+}
+
+/* ==== COMBAT SINGLEPLAYER ==== */
+function playerAttack(type){
+  if(!currentCharacterSP || bot.hp<=0) return;
+  let dmg = (type==="physical"?currentCharacterSP.str:currentCharacterSP.mag);
+  if(currentCharacterSP.activeEffects.includes("doubleAttack")){
+    dmg*=2;
+    removeEffect(currentCharacterSP,"doubleAttack");
+    logEventSP("Attacco doppio attivato!");
+  }
+  bot.hp -= dmg;
+  logEventSP(`Attacco ${type}. Inflitti ${dmg} danni al Bot. HP Bot: ${bot.hp}`);
+  document.getElementById("hpBot").textContent = bot.hp;
+
+  if(bot.hp>0) botTurn();
+}
+
+function botTurn(){
+  let dmg = Math.floor(Math.random()*3)+1;
+  currentCharacterSP.hp -= dmg;
+  logEventSP(`Il Bot ti attacca! Subiti ${dmg} danni. HP rimanenti: ${currentCharacterSP.hp}`);
+  showCharacterSP();
+}
+
+/* ==== UTILI SINGLEPLAYER ==== */
+function showCharacterSP(){
+  const c = currentCharacterSP;
+  if(!c) return;
+  document.getElementById("infoSP").style.display = "block";
+  document.getElementById("charNameSP").textContent = c.name;
+  document.getElementById("hpSP").textContent = c.hp;
+  document.getElementById("strSP").textContent = c.str;
+  document.getElementById("agiSP").textContent = c.agi;
+  document.getElementById("magSP").textContent = c.mag;
+}
+
+function logEventSP(text){
+  const div = document.getElementById("logTextSP");
   div.innerHTML = `<div>${text}</div>` + div.innerHTML;
 }
 </script>
