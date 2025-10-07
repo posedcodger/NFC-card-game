@@ -84,7 +84,7 @@ document.getElementById("scanBtn").addEventListener("click", async ()=>{
       alert("Scansione avviata — avvicina la carta!");
       ndef.onreading = event=>{
         const uid = event.serialNumber;
-        console.log("Carta letta:", uid);
+        alert("UID letto: " + uid);
         handleCard(uid);
       };
     }catch(error){
@@ -141,3 +141,4 @@ function showCharacter(){
 
 </body>
 </html>
+
