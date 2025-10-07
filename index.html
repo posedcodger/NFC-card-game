@@ -2,121 +2,142 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - Statistica Interattiva</title>
+<title>Gioco Carte NFC - v2</title>
 <style>
-body { font-family: Arial; text-align:center; padding:2em; background:#f5f5f5;}
-#info {background:white; padding:1em 2em; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); margin:1em auto; max-width:400px;}
-button {padding:12px 20px; font-size:16px; border-radius:8px; border:none; background:#4CAF50; color:white; cursor:pointer;}
-button:hover{background:#45a049;}
-.stat {display:flex; justify-content:space-between; align-items:center; margin:8px 0;}
-.stat button {padding:6px 12px; font-size:14px; border-radius:6px;}
-.hidden {display:none;}
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #f0f4f8;
+  padding: 2em;
+}
+#info {
+  background: white;
+  padding: 1.5em;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  max-width: 400px;
+  margin: 1.5em auto;
+}
+button {
+  padding: 12px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #4CAF50;
+  color: white;
+}
+button:hover { background: #45a049; }
+
+#plusButtons {
+  margin-top: 15px;
+  display: none;
+}
+#plusButtons button {
+  margin: 5px;
+  background: #2196F3;
+}
 </style>
 </head>
 <body>
 
 <h1>🎮 Gioco Carte NFC</h1>
-<p>Avvicina una carta NFC al telefono per iniziare.</p>
+<p>Avvicina una carta per iniziare o potenziarti!</p>
 <button id="scanBtn">Scansiona Carta</button>
 
-<div id="info" class="hidden">
+<div id="info" style="display:none;">
   <h2 id="charName"></h2>
-  <div class="stat">❤️ Punti Vita: <span id="hp"></span></div>
-  <div class="stat">💪 Forza: <span id="str"></span> <button id="addStr" class="hidden">＋</button></div>
-  <div class="stat">⚡ Agilità: <span id="agi"></span> <button id="addAgi" class="hidden">＋</button></div>
-  <div class="stat">✨ Magia: <span id="mag"></span> <button id="addMag" class="hidden">＋</button></div>
+  <p>❤️ Punti Vita: <span id="hp"></span></p>
+  <p>💪 Forza: <span id="str"></span></p>
+  <p>⚡ Agilità: <span id="agi"></span></p>
+  <p>✨ Magia: <span id="mag"></span></p>
+  <div id="plusButtons">
+    <p><b>+1 punto a una statistica:</b></p>
+    <button onclick="addStat('str')">Forza +1</button>
+    <button onclick="addStat('agi')">Agilità +1</button>
+    <button onclick="addStat('mag')">Magia +1</button>
+  </div>
 </div>
 
 <script>
-const charactersList = [
+const characters = [
   {name:"Guerriero", hp:10, str:8, agi:5, mag:2},
   {name:"Mago", hp:8, str:3, agi:4, mag:9},
   {name:"Arciere", hp:9, str:5, agi:8, mag:3},
   {name:"Assassino", hp:7, str:6, agi:9, mag:2},
 ];
 
-// UID carte (esempi reali)
+// I tuoi UID reali:
 const cardsUID = {
-  "041B82B98F6180": "personaggioIniziale", // carta personaggio casuale
-  "": "bonusHP",             // carta +1 HP
-  "0409CFB98F6180": "bonusStat",           // carta per +1 a una statistica (una sola)
-  "0427AF676F6180": "itemCasuale"          // carta item
+  "04:1B:82:B9:8F:61:80": "personaggioIniziale",
+  "04:09:CF:B9:8F:61:80": "bonusStat",
+  "04:27:AF:67:6F:61:80": "itemCasuale"
 };
 
 let currentCharacter = null;
 
-document.getElementById("scanBtn").addEventListener("click", async()=>{
+document.getElementById("scanBtn").addEventListener("click", async ()=>{
   if("NDEFReader" in window){
     try{
       const ndef = new NDEFReader();
       await ndef.scan();
-      console.log("Scansione avviata... Avvicina la carta.");
-
+      alert("Scansione avviata — avvicina la carta!");
       ndef.onreading = event=>{
-        let uid = event.serialNumber;
+        const uid = event.serialNumber;
         console.log("Carta letta:", uid);
-        const uidNormalized = uid.replace(/:/g,'').toUpperCase();
-        const cardType = cardsUID[uid] || cardsUID[uidNormalized];
-
-        if(cardType === "personaggioIniziale"){
-          const randomIndex = Math.floor(Math.random()*charactersList.length);
-          currentCharacter = {...charactersList[randomIndex]};
-          alert("Personaggio assegnato: " + currentCharacter.name);
-          showCharacter(currentCharacter);
-        }
-        else if(cardType === "bonusHP" && currentCharacter){
-          currentCharacter.hp += 1;
-          alert("+1 HP per il personaggio!");
-          showCharacter(currentCharacter);
-        }
-        else if(cardType === "bonusStat" && currentCharacter){
-          // mostra pulsanti "+"
-          enableStatButtons(true);
-        }
-        else if(cardType === "itemCasuale" && currentCharacter){
-          const stats = ["str","agi","mag"];
-          const stat = stats[Math.floor(Math.random()*stats.length)];
-          currentCharacter[stat] +=2;
-          alert("Item casuale: +" + 2 + " a "+stat);
-          showCharacter(currentCharacter);
-        }
-        else alert("Carta sconosciuta o nessun personaggio selezionato.");
+        handleCard(uid);
       };
-
-    }catch(error){alert("Errore nella scansione NFC: "+error);}
+    }catch(error){
+      alert("Errore nella scansione NFC: " + error);
+    }
   } else alert("NFC non supportato su questo dispositivo/browser.");
 });
 
-function showCharacter(char){
-  document.getElementById("info").classList.remove("hidden");
-  document.getElementById("charName").textContent = char.name;
-  document.getElementById("hp").textContent = char.hp;
-  document.getElementById("str").textContent = char.str;
-  document.getElementById("agi").textContent = char.agi;
-  document.getElementById("mag").textContent = char.mag;
-  enableStatButtons(false);
+function handleCard(uid){
+  const type = cardsUID[uid];
+  if(!type){
+    alert("Carta sconosciuta!");
+    return;
+  }
+
+  if(type === "personaggioIniziale"){
+    currentCharacter = {...characters[Math.floor(Math.random() * characters.length)]};
+    alert("Hai pescato: " + currentCharacter.name);
+    showCharacter();
+  }
+  else if(type === "bonusStat"){
+    if(!currentCharacter){alert("Prima devi avere un personaggio!"); return;}
+    document.getElementById("plusButtons").style.display = "block";
+  }
+  else if(type === "itemCasuale"){
+    if(!currentCharacter){alert("Prima devi avere un personaggio!"); return;}
+    const stats = ["str","agi","mag"];
+    const chosen = stats[Math.floor(Math.random()*stats.length)];
+    currentCharacter[chosen] += 2;
+    alert("Hai trovato un oggetto! +" + 2 + " a " + chosen);
+    showCharacter();
+  }
 }
 
-function enableStatButtons(enable){
-  ["addStr","addAgi","addMag"].forEach(id=>{
-    const btn = document.getElementById(id);
-    btn.classList.toggle("hidden", !enable);
-  });
-
-  if(enable){
-    ["addStr","addAgi","addMag"].forEach(id=>{
-      const btn = document.getElementById(id);
-      btn.onclick = ()=>{
-        const stat = id.replace("add","").toLowerCase();
-        currentCharacter[stat] += 1;
-        alert("Hai aumentato " + stat + " di +1");
-        showCharacter(currentCharacter);
-      };
-    });
+function addStat(stat){
+  if(currentCharacter){
+    currentCharacter[stat] += 1;
+    alert("Aumentata " + stat + " di 1 punto!");
+    showCharacter();
+    document.getElementById("plusButtons").style.display = "none";
   }
+}
+
+function showCharacter(){
+  const c = currentCharacter;
+  document.getElementById("info").style.display = "block";
+  document.getElementById("charName").textContent = c.name;
+  document.getElementById("hp").textContent = c.hp;
+  document.getElementById("str").textContent = c.str;
+  document.getElementById("agi").textContent = c.agi;
+  document.getElementById("mag").textContent = c.mag;
 }
 </script>
 
 </body>
 </html>
-
