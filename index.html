@@ -2,41 +2,45 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - Avanzato</title>
+<title>Gioco Carte NFC - Statistica Interattiva</title>
 <style>
 body { font-family: Arial; text-align:center; padding:2em; background:#f5f5f5;}
-#info, #card {background:white; padding:1em 2em; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); margin:1em auto; max-width:400px;}
+#info {background:white; padding:1em 2em; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); margin:1em auto; max-width:400px;}
 button {padding:12px 20px; font-size:16px; border-radius:8px; border:none; background:#4CAF50; color:white; cursor:pointer;}
 button:hover{background:#45a049;}
+.stat {display:flex; justify-content:space-between; align-items:center; margin:8px 0;}
+.stat button {padding:6px 12px; font-size:14px; border-radius:6px;}
+.hidden {display:none;}
 </style>
 </head>
 <body>
 
 <h1>🎮 Gioco Carte NFC</h1>
-<p>Avvicina una carta NFC al telefono.</p>
+<p>Avvicina una carta NFC al telefono per iniziare.</p>
 <button id="scanBtn">Scansiona Carta</button>
 
-<div id="info" style="display:none;">
-<h2 id="charName"></h2>
-<p>Punti Vita: <span id="hp">10</span></p>
-<p>Forza: <span id="str"></span></p>
-<p>Agilità: <span id="agi"></span></p>
-<p>Magia: <span id="mag"></span></p>
+<div id="info" class="hidden">
+  <h2 id="charName"></h2>
+  <div class="stat">❤️ Punti Vita: <span id="hp"></span></div>
+  <div class="stat">💪 Forza: <span id="str"></span> <button id="addStr" class="hidden">＋</button></div>
+  <div class="stat">⚡ Agilità: <span id="agi"></span> <button id="addAgi" class="hidden">＋</button></div>
+  <div class="stat">✨ Magia: <span id="mag"></span> <button id="addMag" class="hidden">＋</button></div>
 </div>
 
 <script>
-const characters = {
-  "04:1B:82:B9:8F:61:80": {name:"Guerriero", hp:10, str:8, agi:5, mag:2},
-  P2: {name:"Mago", hp:8, str:3, agi:4, mag:9},
-  P3: {name:"Arciere", hp:9, str:5, agi:8, mag:3},
-  P4: {name:"Assassino", hp:7, str:6, agi:9, mag:2},
-};
+const charactersList = [
+  {name:"Guerriero", hp:10, str:8, agi:5, mag:2},
+  {name:"Mago", hp:8, str:3, agi:4, mag:9},
+  {name:"Arciere", hp:9, str:5, agi:8, mag:3},
+  {name:"Assassino", hp:7, str:6, agi:9, mag:2},
+];
 
-const cardsSpecial = {
-  B1: "bonusHP",    // carta centrale +1 HP
-  S1: "bonusStat",  // carta bonus statistica
-  S2: "bonusStat",  // seconda carta bonus statistica
-  I1: "itemCasuale" // carta item
+// UID carte (esempi reali)
+const cardsUID = {
+  "04:1B:82:B9:8F:61:80": "personaggioIniziale", // carta personaggio casuale
+  "": "bonusHP",             // carta +1 HP
+  "04:09:CF:B9:8F:61:80": "bonusStat",           // carta per +1 a una statistica (una sola)
+  "04:27:AF:67:6F:61:80": "itemCasuale"          // carta item
 };
 
 let currentCharacter = null;
@@ -46,30 +50,30 @@ document.getElementById("scanBtn").addEventListener("click", async()=>{
     try{
       const ndef = new NDEFReader();
       await ndef.scan();
-      console.log("Scansione avviata...");
-      ndef.onreading = event=>{
-        const uid = event.serialNumber;
-        console.log("Carta letta:", uid);
+      console.log("Scansione avviata... Avvicina la carta.");
 
-        if(characters[uid]){
-          currentCharacter = {...characters[uid]};
+      ndef.onreading = event=>{
+        let uid = event.serialNumber;
+        console.log("Carta letta:", uid);
+        const uidNormalized = uid.replace(/:/g,'').toUpperCase();
+        const cardType = cardsUID[uid] || cardsUID[uidNormalized];
+
+        if(cardType === "personaggioIniziale"){
+          const randomIndex = Math.floor(Math.random()*charactersList.length);
+          currentCharacter = {...charactersList[randomIndex]};
+          alert("Personaggio assegnato: " + currentCharacter.name);
           showCharacter(currentCharacter);
         }
-        else if(cardsSpecial[uid] === "bonusHP" && currentCharacter){
+        else if(cardType === "bonusHP" && currentCharacter){
           currentCharacter.hp += 1;
           alert("+1 HP per il personaggio!");
           showCharacter(currentCharacter);
         }
-        else if(cardsSpecial[uid] === "bonusStat" && currentCharacter){
-          let stat = prompt("Scegli la statistica da aumentare (str, agi, mag):");
-          stat = stat.toLowerCase();
-          if(["str","agi","mag"].includes(stat)){
-            currentCharacter[stat] +=1;
-            alert("Bonus applicato a "+stat+" +1");
-            showCharacter(currentCharacter);
-          } else alert("Statistica non valida!");
+        else if(cardType === "bonusStat" && currentCharacter){
+          // mostra pulsanti "+"
+          enableStatButtons(true);
         }
-        else if(cardsSpecial[uid] === "itemCasuale" && currentCharacter){
+        else if(cardType === "itemCasuale" && currentCharacter){
           const stats = ["str","agi","mag"];
           const stat = stats[Math.floor(Math.random()*stats.length)];
           currentCharacter[stat] +=2;
@@ -78,20 +82,40 @@ document.getElementById("scanBtn").addEventListener("click", async()=>{
         }
         else alert("Carta sconosciuta o nessun personaggio selezionato.");
       };
+
     }catch(error){alert("Errore nella scansione NFC: "+error);}
-  }else alert("NFC non supportato sul dispositivo/browser.");
+  } else alert("NFC non supportato su questo dispositivo/browser.");
 });
 
 function showCharacter(char){
-  document.getElementById("info").style.display="block";
+  document.getElementById("info").classList.remove("hidden");
   document.getElementById("charName").textContent = char.name;
   document.getElementById("hp").textContent = char.hp;
   document.getElementById("str").textContent = char.str;
   document.getElementById("agi").textContent = char.agi;
   document.getElementById("mag").textContent = char.mag;
+  enableStatButtons(false);
+}
+
+function enableStatButtons(enable){
+  ["addStr","addAgi","addMag"].forEach(id=>{
+    const btn = document.getElementById(id);
+    btn.classList.toggle("hidden", !enable);
+  });
+
+  if(enable){
+    ["addStr","addAgi","addMag"].forEach(id=>{
+      const btn = document.getElementById(id);
+      btn.onclick = ()=>{
+        const stat = id.replace("add","").toLowerCase();
+        currentCharacter[stat] += 1;
+        alert("Hai aumentato " + stat + " di +1");
+        showCharacter(currentCharacter);
+      };
+    });
+  }
 }
 </script>
+
 </body>
 </html>
-
-
