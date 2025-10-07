@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Gioco di Carte NFC</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f2f2f2;
+      padding: 2em;
+    }
+    #card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5em;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: inline-block;
+      margin-top: 2em;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Gioco di Carte NFC</h1>
+  <p>Tocca "Scansiona carta" e avvicina una carta NFC al telefono.</p>
+  <button id="scanBtn">Scansiona carta</button>
+
+  <div id="card" style="display:none;">
+    <h2 id="charName"></h2>
+    <p><strong>Forza:</strong> <span id="str"></span></p>
+    <p><strong>Agilità:</strong> <span id="agi"></span></p>
+    <p><strong>Magia:</strong> <span id="mag"></span></p>
+  </div>
+
+  <script>
+    const characters = [
+      { name: "Guerriero", forza: 8, agilità: 5, magia: 2 },
+      { name: "Mago", forza: 3, agilità: 4, magia: 9 },
+      { name: "Arciere", forza: 5, agilità: 8, magia: 3 },
+      { name: "Assassino", forza: 6, agilità: 9, magia: 2 },
+      { name: "Paladino", forza: 7, agilità: 6, magia: 4 }
+    ];
+
+    document.getElementById("scanBtn").addEventListener("click", async () => {
+      if ("NDEFReader" in window) {
+        try {
+          const ndef = new NDEFReader();
+          await ndef.scan();
+          console.log("Scansione avviata... Avvicina una carta.");
+          ndef.onreading = event => {
+            const id = event.serialNumber || "Carta sconosciuta";
+            console.log("Carta letta:", id);
+
+            // Assegna un personaggio randomico
+            const randomChar = characters[Math.floor(Math.random() * characters.length)];
+
+            // Mostra i dati a schermo
+            document.getElementById("card").style.display = "inline-block";
+            document.getElementById("charName").textContent = randomChar.name;
+            document.getElementById("str").textContent = randomChar.forza;
+            document.getElementById("agi").textContent = randomChar.agilità;
+            document.getElementById("mag").textContent = randomChar.magia;
+          };
+        } catch (error) {
+          alert("Errore nella scansione NFC: " + error);
+        }
+      } else {
+        alert("NFC non supportato su questo dispositivo o browser.");
+      }
+    });
+  </script>
+</body>
+</html>
