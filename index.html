@@ -1,131 +1,95 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Gioco Carte NFC - Prototipo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 2em;
-      background: #f5f5f5;
-    }
-    #info, #card {
-      background: white;
-      padding: 1em 2em;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      margin: 1em auto;
-      max-width: 400px;
-    }
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .stat-bar {
-      height: 10px;
-      background-color: #ccc;
-      border-radius: 5px;
-      margin: 4px 0;
-      position: relative;
-    }
-    .stat-fill {
-      height: 100%;
-      background-color: #4CAF50;
-      border-radius: 5px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Gioco Carte NFC - Avanzato</title>
+<style>
+body { font-family: Arial; text-align:center; padding:2em; background:#f5f5f5;}
+#info, #card {background:white; padding:1em 2em; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1); margin:1em auto; max-width:400px;}
+button {padding:12px 20px; font-size:16px; border-radius:8px; border:none; background:#4CAF50; color:white; cursor:pointer;}
+button:hover{background:#45a049;}
+</style>
 </head>
 <body>
 
-  <h1>🎮 Gioco Carte NFC</h1>
-  <p>Avvicina una carta NFC al telefono per vedere il personaggio o effetto.</p>
-  <button id="scanBtn">Scansiona Carta</button>
+<h1>🎮 Gioco Carte NFC</h1>
+<p>Avvicina una carta NFC al telefono.</p>
+<button id="scanBtn">Scansiona Carta</button>
 
-  <div id="info" style="display:none;">
-    <h2 id="charName"></h2>
-    <p>Punti Vita: <span id="hp">10</span></p>
-    <p>Forza: <span id="str"></span></p>
-    <p>Agilità: <span id="agi"></span></p>
-    <p>Magia: <span id="mag"></span></p>
-  </div>
+<div id="info" style="display:none;">
+<h2 id="charName"></h2>
+<p>Punti Vita: <span id="hp">10</span></p>
+<p>Forza: <span id="str"></span></p>
+<p>Agilità: <span id="agi"></span></p>
+<p>Magia: <span id="mag"></span></p>
+</div>
 
-  <script>
-    // Dati base dei personaggi
-    const characters = {
-      P1: {name: "Guerriero", hp: 10, str: 8, agi: 5, mag: 2},
-      P2: {name: "Mago", hp: 8, str: 3, agi: 4, mag: 9},
-      P3: {name: "Arciere", hp: 9, str: 5, agi: 8, mag: 3},
-      P4: {name: "Assassino", hp: 7, str: 6, agi: 9, mag: 2},
-    };
+<script>
+const characters = {
+  P1: {name:"Guerriero", hp:10, str:8, agi:5, mag:2},
+  P2: {name:"Mago", hp:8, str:3, agi:4, mag:9},
+  P3: {name:"Arciere", hp:9, str:5, agi:8, mag:3},
+  P4: {name:"Assassino", hp:7, str:6, agi:9, mag:2},
+};
 
-    // UID delle carte speciali
-    const cardsSpecial = {
-      B1: "bonusHP",
-      I1: "itemCasuale"
-    };
+const cardsSpecial = {
+  B1: "bonusHP",    // carta centrale +1 HP
+  S1: "bonusStat",  // carta bonus statistica
+  S2: "bonusStat",  // seconda carta bonus statistica
+  I1: "itemCasuale" // carta item
+};
 
-    let currentCharacter = null;
+let currentCharacter = null;
 
-    document.getElementById("scanBtn").addEventListener("click", async () => {
-      if ("NDEFReader" in window) {
-        try {
-          const ndef = new NDEFReader();
-          await ndef.scan();
-          console.log("Scansione avviata... Avvicina la carta.");
+document.getElementById("scanBtn").addEventListener("click", async()=>{
+  if("NDEFReader" in window){
+    try{
+      const ndef = new NDEFReader();
+      await ndef.scan();
+      console.log("Scansione avviata...");
+      ndef.onreading = event=>{
+        const uid = event.serialNumber;
+        console.log("Carta letta:", uid);
 
-          ndef.onreading = event => {
-            const uid = event.serialNumber;
-            console.log("Carta letta:", uid);
-
-            // Controllo se è un personaggio
-            if (characters[uid]) {
-              currentCharacter = {...characters[uid]}; // copia
-              showCharacter(currentCharacter);
-            } 
-            // Controllo se è carta speciale
-            else if (cardsSpecial[uid] === "bonusHP" && currentCharacter) {
-              currentCharacter.hp += 1;
-              alert("Carta centrale attivata! +1 HP per il personaggio.");
-              showCharacter(currentCharacter);
-            } 
-            else if (cardsSpecial[uid] === "itemCasuale" && currentCharacter) {
-              // Bonus casuale a una statistica
-              const stats = ["str","agi","mag"];
-              const stat = stats[Math.floor(Math.random() * stats.length)];
-              currentCharacter[stat] += 2;
-              alert("Item casuale attivato! +" + 2 + " a " + stat);
-              showCharacter(currentCharacter);
-            } 
-            else {
-              alert("Carta sconosciuta o nessun personaggio selezionato.");
-            }
-          };
-
-        } catch (error) {
-          alert("Errore nella scansione NFC: " + error);
+        if(characters[uid]){
+          currentCharacter = {...characters[uid]};
+          showCharacter(currentCharacter);
         }
-      } else {
-        alert("NFC non supportato su questo dispositivo o browser.");
-      }
-    });
+        else if(cardsSpecial[uid] === "bonusHP" && currentCharacter){
+          currentCharacter.hp += 1;
+          alert("+1 HP per il personaggio!");
+          showCharacter(currentCharacter);
+        }
+        else if(cardsSpecial[uid] === "bonusStat" && currentCharacter){
+          let stat = prompt("Scegli la statistica da aumentare (str, agi, mag):");
+          stat = stat.toLowerCase();
+          if(["str","agi","mag"].includes(stat)){
+            currentCharacter[stat] +=1;
+            alert("Bonus applicato a "+stat+" +1");
+            showCharacter(currentCharacter);
+          } else alert("Statistica non valida!");
+        }
+        else if(cardsSpecial[uid] === "itemCasuale" && currentCharacter){
+          const stats = ["str","agi","mag"];
+          const stat = stats[Math.floor(Math.random()*stats.length)];
+          currentCharacter[stat] +=2;
+          alert("Item casuale: +" + 2 + " a "+stat);
+          showCharacter(currentCharacter);
+        }
+        else alert("Carta sconosciuta o nessun personaggio selezionato.");
+      };
+    }catch(error){alert("Errore nella scansione NFC: "+error);}
+  }else alert("NFC non supportato sul dispositivo/browser.");
+});
 
-    function showCharacter(char) {
-      document.getElementById("info").style.display = "block";
-      document.getElementById("charName").textContent = char.name;
-      document.getElementById("hp").textContent = char.hp;
-      document.getElementById("str").textContent = char.str;
-      document.getElementById("agi").textContent = char.agi;
-      document.getElementById("mag").textContent = char.mag;
-    }
-  </script>
+function showCharacter(char){
+  document.getElementById("info").style.display="block";
+  document.getElementById("charName").textContent = char.name;
+  document.getElementById("hp").textContent = char.hp;
+  document.getElementById("str").textContent = char.str;
+  document.getElementById("agi").textContent = char.agi;
+  document.getElementById("mag").textContent = char.mag;
+}
+</script>
 </body>
 </html>
