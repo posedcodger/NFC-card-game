@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Gioco Carte NFC - v2</title>
+<title>Gioco Carte NFC - v3</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -67,11 +67,11 @@ const characters = [
   {name:"Assassino", hp:7, str:6, agi:9, mag:2},
 ];
 
-// I tuoi UID reali:
+// ✅ UID reali in minuscolo
 const cardsUID = {
-  "04:1B:82:B9:8F:61:80": "personaggioIniziale",
-  "04:09:CF:B9:8F:61:80": "bonusStat",
-  "04:27:AF:67:6F:61:80": "itemCasuale"
+  "04:1b:82:b9:8f:61:80": "personaggioIniziale", // personaggio
+  "04:09:cf:b9:8f:61:80": "bonusStat",           // aumento stats
+  "04:27:af:67:6f:61:80": "itemCasuale"          // item casuale
 };
 
 let currentCharacter = null;
@@ -84,7 +84,8 @@ document.getElementById("scanBtn").addEventListener("click", async ()=>{
       alert("Scansione avviata — avvicina la carta!");
       ndef.onreading = event=>{
         const uid = event.serialNumber;
-        alert("UID letto: " + uid);
+        console.log("Carta letta:", uid);
+        alert("UID letto: " + uid); // utile per debug
         handleCard(uid);
       };
     }catch(error){
@@ -141,4 +142,3 @@ function showCharacter(){
 
 </body>
 </html>
-
